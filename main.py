@@ -2,17 +2,33 @@ import streamlit as st
 import streamlit_authenticator as stauth
 from streamlit_authenticator.utilities import Hasher
 from time import sleep
+from dependencies import consulta_geral,consulta_username,add_registro,cria_tabela
 
 ##################################################
 # Funções
 ##################################################
 
 def main():
+
+    try:
+        consulta_geral()
+    except:
+        cria_tabela()
+
+    # Retorna uma lista com 3 colunas: nome, username, senha
+    db_query = consulta_geral()
+
+    # Criação do cabeçalho usado na autenticação
+    registros = { 'usernames': { } }
+    for data in db_query:
+        registros['usernames'][data[1]] = {'name': data[0], 'password': data[2]}
+
+
     authenticator = stauth.Authenticate(
-        {'usernames': {'teste': {'name': 'testando', 'password':'blabla'}}},
+        registros,
         'random_coockie_name',
         'random_signature_key',
-        cookie_expiry_days = 30, # Expira em 30 dias
+        cookie_expiry_days = 30, # autenticação expira em 30 dias
     )
 
     if 'registrar' not in st.session_state:
@@ -26,33 +42,33 @@ def main():
 def login_form(authenticator):
     authenticator.login(location='main')
     if st.session_state.get('authentication_status'):
-        authenticator.lougot('Logout', main) # Inclui um botão de logout
+        authenticator.logout(location='main')  
         # Login realizado com sucesso
         st.title('Área do dashboard')
-        st.write(f'Bem-vindo! {st.session_state.get('name')}')
+        st.write(f"Bem-vindo! {st.session_state.get('name')}")
     elif st.session_state.get('authentication_status') == False:
         # Erro ao validar as credenciais informadas
         st.error('Usuário/Senha inválidos!')
     elif st.session_state.get('authentication_status') == None:
         # Status inicial da tela de login
         st.warning('Por favor informe um usuário e senha!')
-        registrar = st.button("Registrar")
-        if registrar:
-            st.session_state['registrar'] = True
-            st.rerun()
-
+    registrar = st.button("Registrar")
+    if registrar:
+        st.session_state['registrar'] = True
+        st.rerun()
 def confirm_msg():
     hashed_password = Hasher().hash(st.session_state["passwd"])
     st.write(hashed_password)
     if st.session_state.passwd != st.session_state.confirm_passwd:
         st.warning('As senhas não conferem!')
-        sleep(5)
-    elif 'consulta_nome()':
+        sleep(3)
+    elif consulta_username(st.session_state['user']):
         st.warning('Nome de usuário já existe')
-        sleep(5)
+        sleep(3)
     else:
-        #'add_registro()'
+        add_registro(st.session_state["nome"] , st.session_state["user"] , hashed_password)
         st.success("Registro efetuado!")
+        sleep(3)
 
 def usuario_form():
     with st.form(key="formulario", clear_on_submit=True):
@@ -67,7 +83,7 @@ def usuario_form():
     if clicou_em_fazer_login:
         st.session_state['registrar'] = False
         st.rerun()
-        
+
 ##################################################
 # Main
 ##################################################
