@@ -58,7 +58,6 @@ def login_form(authenticator):
         st.rerun()
 def confirm_msg():
     hashed_password = Hasher().hash(st.session_state["passwd"])
-    st.write(hashed_password)
     if st.session_state.passwd != st.session_state.confirm_passwd:
         st.warning('As senhas não conferem!')
         sleep(3)
